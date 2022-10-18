@@ -57,7 +57,6 @@ jobs:
         uses: peter-evans/create-pull-request@v4
         with:
             token: ${{ secrets.GHA_PR_TOKEN }}
-            push-to-fork: CvH/LibreELEC.tv
             commit-message: Update dependencies
             title: Update dependencies
             body: |
