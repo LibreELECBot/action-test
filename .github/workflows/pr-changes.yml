@@ -12,7 +12,7 @@ jobs:
       output_le_package_name: ${{ steps.get_commits.outputs.le_package_name }}
 
     steps:
-      - name: Set environment variables
+      - name: Set the basic environment variables
         run: |
           # repo that should be checked
           echo "upstream_repo=CvH/gha-iwlwifi-firmware" >> $GITHUB_ENV
@@ -24,7 +24,7 @@ jobs:
           echo "le_package_name=iwlwifi-firmware" >> $GITHUB_ENV
           echo "le_package_path=packages/linux-firmware/iwlwifi-firmware" >> $GITHUB_ENV
 
-      - name: Get sha and canonical download url for latest version of certdata.txt file
+      - name: Get the latest commits from the repos and set the variables
         id: get_commits
         run: |
 
@@ -61,12 +61,8 @@ jobs:
           token: ${{ secrets.GHA_PR_TOKEN }}
           repository: "CvH/LibreELEC.tv"
 
-      - name: Change stuff at files
+      - name: Change version and hash at package.mk
         run: |
-          echo "${{ needs.get_latest_commit.outputs.output_le_package_name }}"
-          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
-          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit }}"
-          echo "${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}"
           sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
             -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
             -i packages/linux-firmware/iwlwifi-firmware/package.mk
