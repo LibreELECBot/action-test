@@ -7,30 +7,46 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       output_upstream_commit: ${{ steps.get_commits.outputs.upstream_commit }}
+      output_upstream_commit_short: ${{ steps.get_commits.outputs.upstream_commit_short }}
       output_upstream_file_sha256: ${{ steps.get_commits.outputs.upstream_file_sha256 }}
+      output_le_package_name: ${{ steps.get_commits.outputs.le_package_name }}
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Set environment variables
+        run: |
+          # repo that should be checked
+          echo "upstream_repo=CvH/gha-iwlwifi-firmware" >> $GITHUB_ENV
+          echo "upstream_branch=master" >> $GITHUB_ENV
+
+          # repo where the changes should get pushed to
+          echo "le_repo=CvH/LibreELEC.tv" >> $GITHUB_ENV
+          echo "le_branch=master" >> $GITHUB_ENV
+          echo "le_package_name=iwlwifi-firmware" >> $GITHUB_ENV
+          echo "le_package_path=packages/linux-firmware/iwlwifi-firmware" >> $GITHUB_ENV
+
       - name: Get sha and canonical download url for latest version of certdata.txt file
         id: get_commits
         run: |
-          upstream_repo="CvH/gha-iwlwifi-firmware"
-          upstream_branch="master"
-          le_branch="master"
-          le_package_path="packages/linux-firmware/iwlwifi-firmware"
-          # get package infoprmation from LE repository
-          le_package_raw="$(curl -sS -L https://raw.githubusercontent.com/CvH/LibreELEC.tv/${le_branch}/${le_package_path}/package.mk)"
+
+          # get package information from LE repository
+          le_package_raw="$(curl -sS -L https://raw.githubusercontent.com/${{ env.le_repo }}/${{ env.le_branch }}/${{ env.le_package_path }}/package.mk)"
           le_pkg_version="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_VERSION=\").*(?=\")')"
           le_pkg_sha256="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_SHA256=\").*(?=\")')"
           le_pkg_url="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_URL=\").*(?=\")')"
+
           # get latest commit from upstream repository
-          upstream_commit="$(curl -sS -L https://api.github.com/repos/${upstream_repo}/branches/${upstream_branch} | grep -oP -m 1 '(?<=\"sha\": ").*(?=\")')"
+          upstream_commit="$(curl -sS -L https://api.github.com/repos/${{ env.upstream_repo }}/branches/${{ env.upstream_branch }} | grep -oP -m 1 '(?<=\"sha\": ").*(?=\")')"
+
           # download upstream package and check sha256
           rm -f /tmp/file.tar.gz
           curl -sS -L -o /tmp/file.tar.gz ${le_pkg_url/'${PKG_VERSION}'/${upstream_commit}}
           upstream_file_sha256="$(sha256sum /tmp/file.tar.gz | cut -d" " -f1)"
+
           # export vars to environment variable
           echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
+          echo "upstream_commit_short=${upstream_commit:0:7}" >> $GITHUB_OUTPUT
           echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
+          echo "le_package_name=${{ env.le_package_name }}" >> $GITHUB_OUTPUT
 
   create_commit:
     name: PR the latest commit to LibreELEC.tv github repository
@@ -47,8 +63,6 @@ jobs:
 
       - name: Change stuff at files
         run: |
-          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit }}"
-          echo "${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}"
           sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
             -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
             -i packages/linux-firmware/iwlwifi-firmware/package.mk
@@ -56,11 +70,11 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
-            token: ${{ secrets.GHA_PR_TOKEN }}
-            push-to-fork: LibreELECBot/LibreELEC.tv
-            commit-message: Update dependencies
-            title: Update dependencies
-            body: |
-              - Dependency updates
-  
-            branch: update-dependencies
+          token: ${{ secrets.GHA_PR_TOKEN }}
+          push-to-fork: LibreELECBot/LibreELEC.tv
+          commit-message: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
+          title: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
+          body: |
+            - automated pull request
+
+          branch: ${{ needs.get_latest_commit.outputs.output_le_package_name }}/${{ needs.get_latest_commit.outputs.upstream_commit_short }}
