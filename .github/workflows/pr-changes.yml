@@ -63,6 +63,10 @@ jobs:
 
       - name: Change stuff at files
         run: |
+          echo "${{ needs.get_latest_commit.outputs.output_le_package_name }}"
+          echo "${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
+          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit }}"
+          echo "${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}"
           sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
             -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
             -i packages/linux-firmware/iwlwifi-firmware/package.mk
