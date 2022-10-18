@@ -1,4 +1,4 @@
-name: PR latest commit
+name: PR latest commit iwlwifi-firmware
 on:
   workflow_dispatch:
 jobs:
