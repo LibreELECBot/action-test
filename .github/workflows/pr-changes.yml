@@ -29,9 +29,10 @@ jobs:
           curl -sS -L -o /tmp/file.tar.gz ${le_pkg_url/'${PKG_VERSION}'/${upstream_commit}}
           upstream_file_sha256="$(sha256sum /tmp/file.tar.gz | cut -d" " -f1)"
           # export vars to environment variable
-          echo "upstream_commit=${upstream_commit}" >> $GITHUB_ENV
-          echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_ENV
-  create_commit:
+          echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
+          echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
+
+create_commit:
     name: PR the latest commit to LibreELEC.tv github repository
     needs: get_latest_commit
     runs-on: ubuntu-latest
@@ -46,8 +47,10 @@ jobs:
 
       - name: Change stuff at files
         run: |
-          sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ env.upstream_commit }}\"|" \
-            -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ env.upstream_file_sha256 }}\"|" \
+          echo "${{ steps.get_latest_commit.outputs.upstream_commit }}"
+          echo "${{ steps.get_latest_commit.outputs.upstream_file_sha256 }}"
+          sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ steps.get_latest_commit.outputs.upstream_commit }}\"|" \
+            -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ steps.get_latest_commit.outputs.upstream_file_sha256 }}\"|" \
             -i packages/linux-firmware/iwlwifi-firmware/package.mk
           cat packages/linux-firmware/iwlwifi-firmware/package.mk
       - name: Create Pull Request
