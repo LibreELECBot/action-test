@@ -81,4 +81,4 @@ jobs:
           body: |
             - automated pull request
 
-          branch: ${{ needs.get_latest_commit.outputs.output_le_package_name }}/${{ needs.get_latest_commit.outputs.upstream_commit_short }}
+          branch: "${{ needs.get_latest_commit.outputs.output_le_package_name }}/${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
