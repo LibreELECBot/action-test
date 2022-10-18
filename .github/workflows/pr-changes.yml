@@ -61,7 +61,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
           token: ${{ secrets.GHA_PR_TOKEN }}
           repository: "${{ needs.get_latest_commit.outputs.output_le_repo }}"
 
