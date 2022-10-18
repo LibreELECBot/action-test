@@ -32,7 +32,7 @@ jobs:
           echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
           echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
 
-create_commit:
+  create_commit:
     name: PR the latest commit to LibreELEC.tv github repository
     needs: get_latest_commit
     runs-on: ubuntu-latest
