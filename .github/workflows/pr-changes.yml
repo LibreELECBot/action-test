@@ -44,7 +44,7 @@ jobs:
 
           # export vars to environment variable
           echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
-          echo "upstream_commit_short=${upstream_commit:0:7}" >> $GITHUB_OUTPUT
+          echo "upstream_commit_short=${upstream_commit}" >> $GITHUB_OUTPUT
           echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
           echo "le_package_name=${{ env.le_package_name }}" >> $GITHUB_OUTPUT
 
