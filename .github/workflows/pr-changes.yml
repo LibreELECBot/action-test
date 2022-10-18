@@ -5,6 +5,9 @@ jobs:
   get_latest_commit:
     name: Get the latest commit from Repository
     runs-on: ubuntu-latest
+    outputs:
+      output_upstream_commit: ${{ steps.get_commits.outputs.upstream_commit }}
+      output_upstream_file_sha256: ${{ steps.get_commits.outputs.upstream_file_sha256 }}
     steps:
       - uses: actions/checkout@v3
       - name: Get sha and canonical download url for latest version of certdata.txt file
@@ -44,10 +47,10 @@ jobs:
 
       - name: Change stuff at files
         run: |
-          echo "${{ steps.get_commits.outputs.upstream_commit }}"
-          echo "${{ steps.get_commits.outputs.upstream_file_sha256 }}"
-          sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ steps.get_commits.outputs.upstream_commit }}\"|" \
-            -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ steps.get_commits.outputs.upstream_file_sha256 }}\"|" \
+          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit }}"
+          echo "${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}"
+          sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
+            -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
             -i packages/linux-firmware/iwlwifi-firmware/package.mk
           cat packages/linux-firmware/iwlwifi-firmware/package.mk
       - name: Create Pull Request
