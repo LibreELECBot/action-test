@@ -44,7 +44,7 @@ jobs:
 
           # export vars to environment variable
           echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
-          echo "upstream_commit_short=1234" >> $GITHUB_OUTPUT
+          echo "upstream_commit_short=${upstream_commit:0:7}" >> $GITHUB_OUTPUT
           echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
           echo "le_package_name=${{ env.le_package_name }}" >> $GITHUB_OUTPUT
 
@@ -64,7 +64,7 @@ jobs:
       - name: Change stuff at files
         run: |
           echo "${{ needs.get_latest_commit.outputs.output_le_package_name }}"
-          echo "${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
+          echo "${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
           echo "${{ needs.get_latest_commit.outputs.output_upstream_commit }}"
           echo "${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}"
           sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
@@ -76,8 +76,8 @@ jobs:
         with:
           token: ${{ secrets.GHA_PR_TOKEN }}
           push-to-fork: LibreELECBot/LibreELEC.tv
-          commit-message: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
-          title: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.upstream_commit_short }}"
+          commit-message: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
+          title: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
           body: |
             - automated pull request
 
