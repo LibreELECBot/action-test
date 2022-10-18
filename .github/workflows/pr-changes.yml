@@ -10,6 +10,8 @@ jobs:
       output_upstream_commit_short: ${{ steps.get_commits.outputs.upstream_commit_short }}
       output_upstream_file_sha256: ${{ steps.get_commits.outputs.upstream_file_sha256 }}
       output_le_package_name: ${{ steps.get_commits.outputs.le_package_name }}
+      output_le_package_path: ${{ steps.get_commits.outputs.le_package_path }}
+      output_le_repo: ${{ steps.get_commits.outputs.le_repo }}
 
     steps:
       - name: Set the basic environment variables
@@ -47,6 +49,8 @@ jobs:
           echo "upstream_commit_short=${upstream_commit:0:7}" >> $GITHUB_OUTPUT
           echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
           echo "le_package_name=${{ env.le_package_name }}" >> $GITHUB_OUTPUT
+          echo "le_package_path=${{ env.le_package_path }}" >> $GITHUB_OUTPUT
+          echo "le_repo=${{ env.le_repo }}" >> $GITHUB_OUTPUT
 
   create_commit:
     name: PR the latest commit to LibreELEC.tv github repository
@@ -59,14 +63,13 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GHA_PR_TOKEN }}
-          repository: "CvH/LibreELEC.tv"
+          repository: "${{ needs.get_latest_commit.outputs.output_le_repo }}"
 
       - name: Change version and hash at package.mk
         run: |
           sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
             -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
-            -i packages/linux-firmware/iwlwifi-firmware/package.mk
-          cat packages/linux-firmware/iwlwifi-firmware/package.mk
+            -i ${{ needs.get_latest_commit.outputs.output_le_package_path }}/package.mk
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
