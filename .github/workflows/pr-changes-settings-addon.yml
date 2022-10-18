@@ -1,0 +1,74 @@
+name: PR latest commit service.libreelec.settings
+on:
+  workflow_dispatch:
+jobs:
+  get_latest_commit:
+    name: Get the latest commit from Repository
+    runs-on: ubuntu-latest
+    outputs:
+      output_upstream_commit: ${{ steps.get_commits.outputs.upstream_commit }}
+      output_upstream_commit_short: ${{ steps.get_commits.outputs.upstream_commit_short }}
+      output_upstream_file_sha256: ${{ steps.get_commits.outputs.upstream_file_sha256 }}
+      output_le_package_name: ${{ steps.get_commits.outputs.le_package_name }}
+      output_le_package_path: ${{ steps.get_commits.outputs.le_package_path }}
+      output_le_repo: ${{ steps.get_commits.outputs.le_repo }}
+
+    steps:
+      - name: Set the basic environment variables
+        run: |
+          # repo that should be checked
+          echo "upstream_repo=LibreELEC/service.libreelec.settings" >> $GITHUB_ENV
+          echo "upstream_branch=master" >> $GITHUB_ENV
+          # repo where the changes should get pushed to
+          echo "le_repo=CvH/LibreELEC.tv" >> $GITHUB_ENV
+          echo "le_branch=master" >> $GITHUB_ENV
+          echo "le_package_name=LibreELEC-settings" >> $GITHUB_ENV
+          echo "le_package_path=packages/mediacenter/LibreELEC-settings" >> $GITHUB_ENV
+      - name: Get the latest commits from the repos and set the variables
+        id: get_commits
+        run: |
+          # get package information from LE repository
+          le_package_raw="$(curl -sS -L https://raw.githubusercontent.com/${{ env.le_repo }}/${{ env.le_branch }}/${{ env.le_package_path }}/package.mk)"
+          le_pkg_version="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_VERSION=\").*(?=\")')"
+          le_pkg_sha256="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_SHA256=\").*(?=\")')"
+          le_pkg_url="$(echo -e "${le_package_raw}" | grep -oP -m 1 '(?<=PKG_URL=\").*(?=\")')"
+          # get latest commit from upstream repository
+          upstream_commit="$(curl -sS -L https://api.github.com/repos/${{ env.upstream_repo }}/branches/${{ env.upstream_branch }} | grep -oP -m 1 '(?<=\"sha\": ").*(?=\")')"
+          # download upstream package and check sha256
+          rm -f /tmp/file.tar.gz
+          curl -sS -L -o /tmp/file.tar.gz ${le_pkg_url/'${PKG_VERSION}'/${upstream_commit}}
+          upstream_file_sha256="$(sha256sum /tmp/file.tar.gz | cut -d" " -f1)"
+          # export vars to environment variable
+          echo "upstream_commit=${upstream_commit}" >> $GITHUB_OUTPUT
+          echo "upstream_commit_short=${upstream_commit:0:7}" >> $GITHUB_OUTPUT
+          echo "upstream_file_sha256=${upstream_file_sha256}" >> $GITHUB_OUTPUT
+          echo "le_package_name=${{ env.le_package_name }}" >> $GITHUB_OUTPUT
+          echo "le_package_path=${{ env.le_package_path }}" >> $GITHUB_OUTPUT
+          echo "le_repo=${{ env.le_repo }}" >> $GITHUB_OUTPUT
+  create_commit:
+    name: PR the latest commit to LibreELEC.tv github repository
+    needs: get_latest_commit
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GHA_PR_TOKEN }}
+          repository: "${{ needs.get_latest_commit.outputs.output_le_repo }}"
+
+      - name: Change version and hash at package.mk
+        run: |
+          sed -e "s|^PKG_VERSION=.*|PKG_VERSION=\"${{ needs.get_latest_commit.outputs.output_upstream_commit }}\"|" \
+            -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${{ needs.get_latest_commit.outputs.output_upstream_file_sha256 }}\"|" \
+            -i ${{ needs.get_latest_commit.outputs.output_le_package_path }}/package.mk
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GHA_PR_TOKEN }}
+          push-to-fork: LibreELECBot/LibreELEC.tv
+          commit-message: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
+          title: "${{ needs.get_latest_commit.outputs.output_le_package_name }}: update to ${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
+          body: |
+            - automated pull request
+          branch: "${{ needs.get_latest_commit.outputs.output_le_package_name }}/${{ needs.get_latest_commit.outputs.output_upstream_commit_short }}"
