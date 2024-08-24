@@ -1,4 +1,4 @@
-name: update-binary-addons-LE12-remote-repo
+name: update-addons-LE12-own-branch
 on:
   workflow_dispatch:
     inputs:
