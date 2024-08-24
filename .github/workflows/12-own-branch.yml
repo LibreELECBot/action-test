@@ -20,13 +20,11 @@ jobs:
           export GITHUB_API_TOKEN="$GH_API_KEY"
           temp_file=$(mktemp)
           ./tools/mkpkg/update_binary-addons -x master | tee "${temp_file}"
+          echo "-------------------!-------------------"
           git_commit_msg=$(cat ${temp_file} | grep "^UPDATED " | sed 's/^UPDATED /- /' | sed 's/ from /: update /')
           echo "git_commit_msg<<EOF" >> $GITHUB_OUTPUT
           echo "${git_commit_msg}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          echo "-------------------!-------------------"
-          echo "${temp_file"
-          echo "-------------------!-------------------"
 
       - name: Get SHA of the branch that triggered the workflow run
         id: head_branch
