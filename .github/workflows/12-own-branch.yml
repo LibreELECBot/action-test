@@ -1,7 +1,6 @@
 name: update-addons-LE12-own-branch
 on:
   workflow_dispatch:
-    inputs:
 jobs:
   update_addon_repo:
     name: Update Addon Repo
@@ -16,7 +15,6 @@ jobs:
           repository: "LibreELECBot/LibreELEC.tv"
       - name: Update Binary Addons
         id: update_binary_addons
-        continue-on-error: true
         run: |
           echo "Updating Add-on version ${{ github.event.inputs.input_addon-version }}"
           export GITHUB_API_TOKEN="$GH_API_KEY"
@@ -62,6 +60,5 @@ jobs:
             packages/mediacenter/kodi-binary-addons
 
       - name: Clean up
-        continue-on-error: true
         run: |
-          rm "${temp_file}"
+          rm -f "${temp_file}"
