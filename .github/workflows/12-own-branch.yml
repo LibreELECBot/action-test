@@ -19,7 +19,7 @@ jobs:
           echo "Updating Add-on version ${{ github.event.inputs.input_addon-version }}"
           export GITHUB_API_TOKEN="$GH_API_KEY"
           temp_file=$(mktemp)
-          ./tools/mkpkg/update_binary-addons -x master > "${temp_file}" | true
+          ./tools/mkpkg/update_binary-addons -x master | tee "${temp_file}"
           git_commit_msg=$(cat ${temp_file} | grep "^UPDATED " | sed 's/^UPDATED /- /' | sed 's/ from /: update /')
           echo "git_commit_msg<<EOF" >> $GITHUB_OUTPUT
           echo "${git_commit_msg}" >> $GITHUB_OUTPUT
